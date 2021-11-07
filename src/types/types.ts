@@ -1,7 +1,13 @@
 export interface RequestConfig {
 	apikey?: string
+	/**
+	 * FAGC API master API
+	 */
 	masterapikey?: string
-	cookieAuth?: boolean
+	/**
+	 * To be used in par with cookie authentication
+	 */
+	communityId?: string
 }
 export interface ManagerOptions {
 	uncachems?: number // at which time it should be uncached

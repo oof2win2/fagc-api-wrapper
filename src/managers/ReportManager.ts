@@ -10,9 +10,9 @@ import {
 import strictUriEncode from "strict-uri-encode"
 
 export default class ReportManager extends BaseManager<Report> {
-	public apikey?: string
 	private apiurl: string
 	private createRevocation: (revocationObject: Revocation) => void
+
 	constructor(
 		options: WrapperOptions,
 		createRevocation: (revocationObject: Revocation) => void,
@@ -130,7 +130,7 @@ export default class ReportManager extends BaseManager<Report> {
 		cache = true,
 		reqConfig: RequestConfig = {}
 	): Promise<Report> {
-		if (!reqConfig.apikey && !this.apikey && !reqConfig.cookieAuth)
+		if (!reqConfig.apikey && !this.apikey && !reqConfig.communityId)
 			throw new NoAuthError()
 
 		const create = await fetch(`${this.apiurl}/reports`, {
@@ -138,9 +138,9 @@ export default class ReportManager extends BaseManager<Report> {
 			body: JSON.stringify(report),
 			credentials: "include",
 			headers: {
-				authorization: !reqConfig.cookieAuth
+				authorization: !reqConfig.communityId
 					? `Token ${reqConfig.apikey || this.apikey}`
-					: "Cookie",
+					: `Cookie ${reqConfig.communityId || this.communityId}`,
 				"content-type": "application/json",
 			},
 		}).then((u) => u.json())
@@ -157,7 +157,7 @@ export default class ReportManager extends BaseManager<Report> {
 		cache = true,
 		reqConfig: RequestConfig = {}
 	): Promise<Revocation> {
-		if (!reqConfig.apikey && !this.apikey && !reqConfig.cookieAuth)
+		if (!reqConfig.apikey && !this.apikey && !reqConfig.communityId)
 			throw new NoAuthError()
 
 		const revoked = await fetch(`${this.apiurl}/reports`, {
@@ -168,9 +168,9 @@ export default class ReportManager extends BaseManager<Report> {
 			}),
 			credentials: "include",
 			headers: {
-				authorization: !reqConfig.cookieAuth
+				authorization: !reqConfig.communityId
 					? `Token ${reqConfig.apikey || this.apikey}`
-					: "Cookie",
+					: `Cookie ${reqConfig.communityId || this.communityId}`,
 				"content-type": "application/json",
 			},
 		}).then((u) => u.json())
@@ -191,7 +191,7 @@ export default class ReportManager extends BaseManager<Report> {
 		cache = true,
 		reqConfig: RequestConfig = {}
 	): Promise<Revocation[] | null> {
-		if (!reqConfig.apikey && !this.apikey && !reqConfig.cookieAuth)
+		if (!reqConfig.apikey && !this.apikey && !reqConfig.communityId)
 			throw new NoAuthError()
 
 		const revoked = await fetch(`${this.apiurl}/reports/revokeallname`, {
@@ -202,9 +202,9 @@ export default class ReportManager extends BaseManager<Report> {
 			}),
 			credentials: "include",
 			headers: {
-				authorization: !reqConfig.cookieAuth
+				authorization: !reqConfig.communityId
 					? `Token ${reqConfig.apikey || this.apikey}`
-					: "Cookie",
+					: `Cookie ${reqConfig.communityId || this.communityId}`,
 				"content-type": "application/json",
 			},
 		}).then((u) => u.json())

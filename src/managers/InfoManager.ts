@@ -7,9 +7,8 @@ import strictUriEncode from "strict-uri-encode"
 import { APIEmbed } from "discord-api-types"
 
 export default class InfoManager extends BaseManager<Webhook> {
-	public apikey?: string
-	public masterapikey?: string
 	private apiurl: string
+
 	constructor(options: WrapperOptions, managerOptions: ManagerOptions = {}) {
 		super(managerOptions)
 		if (options.apikey) this.apikey = options.apikey
@@ -56,7 +55,7 @@ export default class InfoManager extends BaseManager<Webhook> {
 		if (
 			!this.masterapikey &&
 			!reqConfig.masterapikey &&
-			!reqConfig.cookieAuth
+			!reqConfig.communityId
 		)
 			throw new NoAuthError()
 
@@ -69,9 +68,9 @@ export default class InfoManager extends BaseManager<Webhook> {
 				}),
 				credentials: "include",
 				headers: {
-					authorization: !reqConfig.cookieAuth
+					authorization: !reqConfig.communityId
 						? `Token ${reqConfig.masterapikey || this.masterapikey}`
-						: "Cookie",
+						: `Cookie ${reqConfig.communityId || this.communityId}`,
 					"content-type": "application/json",
 				},
 			}
@@ -85,7 +84,7 @@ export default class InfoManager extends BaseManager<Webhook> {
 		if (
 			!this.masterapikey &&
 			!reqConfig.masterapikey &&
-			!reqConfig.cookieAuth
+			!reqConfig.communityId
 		)
 			throw new NoAuthError()
 
@@ -98,9 +97,9 @@ export default class InfoManager extends BaseManager<Webhook> {
 				body: JSON.stringify(embed),
 				credentials: "include",
 				headers: {
-					authorization: !reqConfig.cookieAuth
+					authorization: !reqConfig.communityId
 						? `Token ${reqConfig.masterapikey || this.masterapikey}`
-						: "Cookie",
+						: `Cookie ${reqConfig.communityId || this.communityId}`,
 					"content-type": "application/json",
 				},
 			}

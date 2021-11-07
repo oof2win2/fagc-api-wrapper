@@ -3,7 +3,14 @@ import { Common } from "fagc-api-types"
 import { AddOptions, ManagerOptions } from "../types/types"
 
 export default class BaseManager<HoldsWithId extends Common> {
+	public apikey?: string
+	public masterapikey?: string
 	public cache: Collection<Common["id"], HoldsWithId>
+	/**
+	 * ID of the community the cookie auth is to act on behalf of
+	 */
+	public communityId = ""
+
 	protected fetchingCache: Collection<
 		Common["id"],
 		Promise<HoldsWithId | null>
