@@ -1,9 +1,15 @@
 import fetch from "isomorphic-fetch"
-import { ManagerOptions, RequestConfig, WrapperOptions } from "../types/types"
+import {
+	GenericAPIError,
+	NoMasterApikeyError,
+	NoAuthError,
+	DefaultProps,
+	ManagerOptions,
+	WrapperOptions,
+} from "../types"
 import { Rule, ApiID } from "fagc-api-types"
 import BaseManager from "./BaseManager"
 import strictUriEncode from "strict-uri-encode"
-import { GenericAPIError, NoMasterApikeyError } from "../types"
 
 export class RuleManager extends BaseManager<Rule> {
 	private apiurl: string
@@ -13,11 +19,15 @@ export class RuleManager extends BaseManager<Rule> {
 		if (options.apikey) this.apikey = options.apikey
 		if (options.masterapikey) this.masterapikey = options.masterapikey
 	}
-	async fetchRule(
-		ruleid: ApiID,
+	async fetchRule({
+		ruleid,
 		cache = true,
-		force = false
-	): Promise<Rule | null> {
+		force = false,
+	}: {
+		ruleid: ApiID
+		cache?: boolean
+		force?: boolean
+	}): Promise<Rule | null> {
 		if (!force) {
 			const cached =
 				this.cache.get(ruleid) || this.fetchingCache.get(ruleid)
@@ -47,7 +57,7 @@ export class RuleManager extends BaseManager<Rule> {
 		if (fetched.id === ruleid) return fetched
 		return null
 	}
-	async fetchAll(cache = true): Promise<Rule[]> {
+	async fetchAll({ cache = true }: { cache?: boolean }): Promise<Rule[]> {
 		const allRules = await fetch(`${this.apiurl}/rules`, {
 			credentials: "include",
 		}).then((r) => r.json())
@@ -63,20 +73,29 @@ export class RuleManager extends BaseManager<Rule> {
 		return null
 	}
 
-	async create(
-		rule: Omit<Rule, "id">,
-		reqConfig: RequestConfig = {}
-	): Promise<Rule> {
-		if (!reqConfig.masterapikey && !this.masterapikey)
-			throw new NoMasterApikeyError()
+	async create({
+		rule,
+		reqConfig,
+	}: {
+		rule: Omit<Rule, "id">
+	} & DefaultProps): Promise<Rule> {
+		if (
+			!reqConfig.masterapikey &&
+			!this.masterapikey &&
+			!reqConfig.communityId &&
+			!this.communityId
+		)
+			throw new NoAuthError()
+		const authentication =
+			reqConfig?.communityId || this.communityId
+				? `Cookie ${reqConfig?.communityId || this.communityId}` // auth method is cookie
+				: `Token ${reqConfig?.apikey || this.apikey}` // auth method is api key
 		const data = await fetch(`${this.apiurl}/rules`, {
 			method: "POST",
 			body: JSON.stringify(rule),
 			credentials: "include",
 			headers: {
-				authorization: `Token ${
-					reqConfig.masterapikey || this.masterapikey
-				}`,
+				authorization: authentication,
 				"content-type": "application/json",
 			},
 		}).then((r) => r.json())
@@ -89,10 +108,12 @@ export class RuleManager extends BaseManager<Rule> {
 		return data
 	}
 
-	async remove(
-		id: string,
-		reqConfig: RequestConfig = {}
-	): Promise<Rule | null> {
+	async remove({
+		id,
+		reqConfig,
+	}: {
+		id: string
+	} & DefaultProps): Promise<Rule | null> {
 		if (!this.masterapikey && !reqConfig.masterapikey)
 			throw new NoMasterApikeyError()
 		const data = await fetch(

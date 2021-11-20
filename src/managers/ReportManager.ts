@@ -1,12 +1,15 @@
 import fetch from "isomorphic-fetch"
-import { ManagerOptions, RequestConfig, WrapperOptions } from "../types/types"
-import { Revocation, Report, CreateReport, ApiID } from "fagc-api-types"
-import BaseManager from "./BaseManager"
 import {
+	ManagerOptions,
+	RequestConfig,
+	WrapperOptions,
+	DefaultProps,
 	GenericAPIError,
 	NoAuthError,
 	UnsuccessfulRevocationError,
-} from "../types/errors"
+} from "../types"
+import { Revocation, Report, CreateReport, ApiID } from "fagc-api-types"
+import BaseManager from "./BaseManager"
 import strictUriEncode from "strict-uri-encode"
 
 export default class ReportManager extends BaseManager<Report> {
@@ -24,11 +27,15 @@ export default class ReportManager extends BaseManager<Report> {
 		this.createRevocation = createRevocation
 	}
 
-	async fetchReport(
-		reportid: ApiID,
+	async fetchReport({
+		reportid,
 		cache = true,
-		force = false
-	): Promise<Report | null> {
+		force = false,
+	}: {
+		reportid: ApiID
+		cache?: boolean
+		force?: boolean
+	}): Promise<Report | null> {
 		if (!force) {
 			const cached =
 				this.cache.get(reportid) || this.fetchingCache.get(reportid)
@@ -62,7 +69,13 @@ export default class ReportManager extends BaseManager<Report> {
 		}, 0)
 		return fetched
 	}
-	async fetchAllName(playername: string, cache = true): Promise<Report[]> {
+	async fetchAllName({
+		playername,
+		cache,
+	}: {
+		playername: string
+		cache?: boolean
+	}): Promise<Report[]> {
 		const allReports = await fetch(
 			`${this.apiurl}/reports/getplayer/${strictUriEncode(playername)}`,
 			{
@@ -84,7 +97,13 @@ export default class ReportManager extends BaseManager<Report> {
 		return allReports
 	}
 
-	async fetchModifiedSince(timestamp: Date, cache = true): Promise<Report[]> {
+	async fetchModifiedSince({
+		timestamp,
+		cache = true,
+	}: {
+		timestamp: Date
+		cache?: boolean
+	}): Promise<Report[]> {
 		const reports = await fetch(
 			`${this.apiurl}/reports/modifiedSince/${timestamp.toISOString()}`,
 			{
@@ -110,7 +129,13 @@ export default class ReportManager extends BaseManager<Report> {
 		if (cached) return cached
 		return null
 	}
-	async fetchByRule(ruleid: ApiID, cache = true): Promise<Report[]> {
+	async fetchByRule({
+		ruleid,
+		cache = true,
+	}: {
+		ruleid: ApiID
+		cache?: boolean
+	}): Promise<Report[]> {
 		const ruleReports = await fetch(
 			`${this.apiurl}/reports/rule/${strictUriEncode(ruleid)}`,
 			{
@@ -125,22 +150,32 @@ export default class ReportManager extends BaseManager<Report> {
 		}
 		return ruleReports
 	}
-	async create(
-		report: CreateReport,
+	async create({
+		report,
 		cache = true,
-		reqConfig: RequestConfig = {}
-	): Promise<Report> {
-		if (!reqConfig.apikey && !this.apikey && !reqConfig.communityId)
+		reqConfig = {},
+	}: {
+		report: CreateReport
+		cache?: boolean
+	} & DefaultProps): Promise<Report> {
+		if (
+			!reqConfig.masterapikey &&
+			!this.masterapikey &&
+			!reqConfig.communityId &&
+			!this.communityId
+		)
 			throw new NoAuthError()
+		const authentication =
+			reqConfig?.communityId || this.communityId
+				? `Cookie ${reqConfig?.communityId || this.communityId}` // auth method is cookie
+				: `Token ${reqConfig?.apikey || this.apikey}` // auth method is api key
 
 		const create = await fetch(`${this.apiurl}/reports`, {
 			method: "POST",
 			body: JSON.stringify(report),
 			credentials: "include",
 			headers: {
-				authorization: !reqConfig.communityId
-					? `Token ${reqConfig.apikey || this.apikey}`
-					: `Cookie ${reqConfig.communityId || this.communityId}`,
+				authorization: authentication,
 				"content-type": "application/json",
 			},
 		}).then((u) => u.json())
@@ -151,14 +186,27 @@ export default class ReportManager extends BaseManager<Report> {
 		if (cache) this.add(create)
 		return create
 	}
-	async revoke(
-		reportid: ApiID,
-		adminId: string,
+	async revoke({
+		reportid,
+		adminId,
 		cache = true,
-		reqConfig: RequestConfig = {}
-	): Promise<Revocation> {
-		if (!reqConfig.apikey && !this.apikey && !reqConfig.communityId)
+		reqConfig = {},
+	}: {
+		reportid: ApiID
+		adminId: string
+		cache?: boolean
+	} & DefaultProps): Promise<Revocation> {
+		if (
+			!reqConfig.masterapikey &&
+			!this.masterapikey &&
+			!reqConfig.communityId &&
+			!this.communityId
+		)
 			throw new NoAuthError()
+		const authentication =
+			reqConfig?.communityId || this.communityId
+				? `Cookie ${reqConfig?.communityId || this.communityId}` // auth method is cookie
+				: `Token ${reqConfig?.apikey || this.apikey}` // auth method is api key
 
 		const revoked = await fetch(`${this.apiurl}/reports`, {
 			method: "DELETE",
@@ -168,9 +216,7 @@ export default class ReportManager extends BaseManager<Report> {
 			}),
 			credentials: "include",
 			headers: {
-				authorization: !reqConfig.communityId
-					? `Token ${reqConfig.apikey || this.apikey}`
-					: `Cookie ${reqConfig.communityId || this.communityId}`,
+				authorization: authentication,
 				"content-type": "application/json",
 			},
 		}).then((u) => u.json())
@@ -185,14 +231,27 @@ export default class ReportManager extends BaseManager<Report> {
 		this.cache.sweep((report) => report.id === reportid) // remove the revoked report from cache as it isnt working anymore
 		return revoked
 	}
-	async revokeAllName(
-		playername: string,
-		adminId: string,
+	async revokeAllName({
+		playername,
+		adminId,
 		cache = true,
-		reqConfig: RequestConfig = {}
-	): Promise<Revocation[] | null> {
-		if (!reqConfig.apikey && !this.apikey && !reqConfig.communityId)
+		reqConfig,
+	}: {
+		playername: string
+		adminId: string
+		cache?: boolean
+	} & DefaultProps): Promise<Revocation[] | null> {
+		if (
+			!reqConfig.masterapikey &&
+			!this.masterapikey &&
+			!reqConfig.communityId &&
+			!this.communityId
+		)
 			throw new NoAuthError()
+		const authentication =
+			reqConfig?.communityId || this.communityId
+				? `Cookie ${reqConfig?.communityId || this.communityId}` // auth method is cookie
+				: `Token ${reqConfig?.apikey || this.apikey}` // auth method is api key
 
 		const revoked = await fetch(`${this.apiurl}/reports/revokeallname`, {
 			method: "DELETE",
@@ -202,9 +261,7 @@ export default class ReportManager extends BaseManager<Report> {
 			}),
 			credentials: "include",
 			headers: {
-				authorization: !reqConfig.communityId
-					? `Token ${reqConfig.apikey || this.apikey}`
-					: `Cookie ${reqConfig.communityId || this.communityId}`,
+				authorization: authentication,
 				"content-type": "application/json",
 			},
 		}).then((u) => u.json())

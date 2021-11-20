@@ -58,24 +58,29 @@ describe("ApiWrapper", () => {
 		)
 	})
 	step("Should be able to fetch own community with API key", async () => {
-		const ownCommunity = await FAGC.communities.fetchOwnCommunity(null, {
-			apikey: config.apikey,
+		const ownCommunity = await FAGC.communities.fetchOwnCommunity({
+			reqConfig: { apikey: config.apikey },
 		})
 		expect(ownCommunity, "Community was not found").to.not.be.null
 	})
 	step("Should be able to set and get configs properly", async function () {
 		this.timeout(5000)
-		const guildConfig = await FAGC.communities.fetchGuildConfig(testGuildId)
-		const oldConfig = await FAGC.communities.fetchCommunityConfig(
-			guildConfig.communityId
-		)
+		const guildConfig = await FAGC.communities.fetchGuildConfig({
+			guildId: testGuildId,
+		})
+		const oldConfig = await FAGC.communities.fetchCommunityConfig({
+			communityId: guildConfig.communityId,
+		})
 		expect(oldConfig?.guildIds).to.include(
 			testGuildId,
 			"Guild configs fetched improperly"
 		)
 		const newName = "OOF2 BANBOT"
+		console.log(FAGC.communities.apikey, "pre request")
 		const newConfig = await FAGC.communities.setCommunityConfig({
-			name: newName,
+			config: {
+				name: newName,
+			},
 		})
 		expect(newConfig.name).to.equal(
 			newName,
@@ -84,7 +89,9 @@ describe("ApiWrapper", () => {
 
 		// reset community name after test
 		await FAGC.communities.setCommunityConfig({
-			name: oldConfig.name,
+			config: {
+				name: oldConfig.name,
+			},
 		})
 	})
 	step(
@@ -527,11 +534,10 @@ describe("ApiWrapper", () => {
 
 			await FAGC.communities.remove(community.id)
 
-			const fetchedCommunity = await FAGC.communities.fetchCommunity(
-				community.id,
-				null,
-				true
-			)
+			const fetchedCommunity = await FAGC.communities.fetchCommunity({
+				communityId: community.id,
+				force: true,
+			})
 			expect(fetchedCommunity, "Community exists after it was removed").to
 				.be.null
 

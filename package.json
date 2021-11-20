@@ -38,6 +38,7 @@
 		"fagc-api-types": "^1.3.0",
 		"isomorphic-fetch": "^3.0.0",
 		"isomorphic-ws": "^4.0.1",
+		"reflect-metadata": "^0.1.13",
 		"strict-uri-encode": "^2.0.0",
 		"ws": "^7.5.0"
 	},

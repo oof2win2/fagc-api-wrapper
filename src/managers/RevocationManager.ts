@@ -20,11 +20,15 @@ export default class RevocationManager extends BaseManager<Revocation> {
 	addRevocation(revocation: Revocation): void {
 		this.add(revocation)
 	}
-	async fetchRevocations(
-		playername: string,
-		communityId: string,
-		cache = true
-	): Promise<Revocation[]> {
+	async fetchRevocations({
+		playername,
+		communityId,
+		cache = true,
+	}: {
+		playername: string
+		communityId: string
+		cache?: boolean
+	}): Promise<Revocation[]> {
 		const revocations = await fetch(
 			`${this.apiurl}/revocations/community/${strictUriEncode(
 				playername
@@ -40,10 +44,13 @@ export default class RevocationManager extends BaseManager<Revocation> {
 			)
 		return revocations
 	}
-	async fetchAllRevocations(
-		playername: string,
-		cache = true
-	): Promise<Revocation[]> {
+	async fetchAllRevocations({
+		playername,
+		cache = true,
+	}: {
+		playername: string
+		cache?: boolean
+	}): Promise<Revocation[]> {
 		const revocations = await fetch(
 			`${this.apiurl}/revocations/player/${strictUriEncode(playername)}`,
 			{ credentials: "include" }
@@ -56,10 +63,13 @@ export default class RevocationManager extends BaseManager<Revocation> {
 		return revocations
 	}
 
-	async fetchModifiedSince(
-		timestamp: Date,
-		cache = true
-	): Promise<Revocation[]> {
+	async fetchModifiedSince({
+		timestamp,
+		cache = true,
+	}: {
+		timestamp: Date
+		cache?: boolean
+	}): Promise<Revocation[]> {
 		const revocations = await fetch(
 			`${
 				this.apiurl

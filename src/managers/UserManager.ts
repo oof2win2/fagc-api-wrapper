@@ -1,5 +1,11 @@
 import fetch from "isomorphic-fetch"
-import { ManagerOptions, RequestConfig, WrapperOptions } from "../types/types"
+import {
+	ManagerOptions,
+	RequestConfig,
+	WrapperOptions,
+	DefaultProps,
+	NoAuthError,
+} from "../types"
 import BaseManager from "./BaseManager"
 import strictUriEncode from "strict-uri-encode"
 import { GenericAPIError } from ".."
@@ -12,7 +18,11 @@ export default class UserManager extends BaseManager<null> {
 		if (options.apikey) this.apikey = options.apikey
 		this.apiurl = options.apiurl
 	}
-	async fetchUser(discordUserId: string): Promise<User | null> {
+	async fetchUser({
+		discordUserId,
+	}: {
+		discordUserId: string
+	}): Promise<User | null> {
 		const fetched = await fetch(
 			`${this.apiurl}/users/${strictUriEncode(discordUserId)}`,
 			{
@@ -24,15 +34,29 @@ export default class UserManager extends BaseManager<null> {
 		return fetched
 	}
 
-	async addUserToCommunity(
-		discordUserId: string,
+	async addUserToCommunity({
+		discordUserId,
+		config = {},
+		reqConfig,
+	}: {
+		discordUserId: string
 		config: {
 			reports?: boolean
 			config?: boolean
 			notifications?: boolean
-		} = {},
-		reqConfig: RequestConfig = {}
-	): Promise<User | null> {
+		}
+	} & DefaultProps): Promise<User | null> {
+		if (
+			!reqConfig.masterapikey &&
+			!this.masterapikey &&
+			!reqConfig.communityId &&
+			!this.communityId
+		)
+			throw new NoAuthError()
+		const authentication =
+			reqConfig?.communityId || this.communityId
+				? `Cookie ${reqConfig?.communityId || this.communityId}` // auth method is cookie
+				: `Token ${reqConfig?.apikey || this.apikey}` // auth method is api key
 		const fetched = await fetch(
 			`${this.apiurl}/users/addUserToCommunity/${strictUriEncode(
 				discordUserId
@@ -42,7 +66,7 @@ export default class UserManager extends BaseManager<null> {
 				body: JSON.stringify(config),
 				credentials: "include",
 				headers: {
-					authorization: `Token ${reqConfig.apikey || this.apikey}`,
+					authorization: authentication,
 					"content-type": "application/json",
 				},
 			}
@@ -51,10 +75,12 @@ export default class UserManager extends BaseManager<null> {
 		return fetched
 	}
 
-	async removeUserFromCommunity(
-		discordUserId: string,
-		reqConfig: RequestConfig = {}
-	): Promise<User | null> {
+	async removeUserFromCommunity({
+		discordUserId,
+		reqConfig,
+	}: {
+		discordUserId: string
+	} & DefaultProps): Promise<User | null> {
 		const fetched = await fetch(
 			`${this.apiurl}/users/removeUserFromCommunity/${strictUriEncode(
 				discordUserId
@@ -79,7 +105,13 @@ export default class UserManager extends BaseManager<null> {
 		return fetched.url
 	}
 
-	async signup(code: string, state: string): Promise<User | null> {
+	async signup({
+		code,
+		state,
+	}: {
+		code: string
+		state: string
+	}): Promise<User | null> {
 		const fetched = await fetch(
 			`${this.apiurl}/users/signup?code=${strictUriEncode(
 				code

@@ -24,3 +24,7 @@ export interface AddOptions {
 	id?: never
 }
 export type ApiID = string
+
+export interface DefaultProps {
+	reqConfig?: RequestConfig
+}

@@ -1,8 +1,14 @@
 import fetch from "isomorphic-fetch"
-import { ManagerOptions, WrapperOptions } from "../types/types"
 import { Webhook } from "fagc-api-types"
 import BaseManager from "./BaseManager"
-import { GenericAPIError, RequestConfig, NoAuthError } from "../types"
+import {
+	GenericAPIError,
+	RequestConfig,
+	NoAuthError,
+	DefaultProps,
+	ManagerOptions,
+	WrapperOptions,
+} from "../types"
 import strictUriEncode from "strict-uri-encode"
 import { APIEmbed } from "discord-api-types"
 
@@ -47,18 +53,25 @@ export default class InfoManager extends BaseManager<Webhook> {
 		return add
 	}
 
-	async notifyGuildText(
-		guildId: string,
-		text: string,
-		reqConfig: RequestConfig = {}
-	): Promise<void> {
+	async notifyGuildText({
+		guildId,
+		text,
+		reqConfig = {},
+	}: {
+		guildId: string
+		text: string
+	} & DefaultProps): Promise<void> {
 		if (
-			!this.masterapikey &&
 			!reqConfig.masterapikey &&
-			!reqConfig.communityId
+			!this.masterapikey &&
+			!reqConfig.communityId &&
+			!this.communityId
 		)
 			throw new NoAuthError()
-
+		const authentication =
+			reqConfig?.communityId || this.communityId
+				? `Cookie ${reqConfig?.communityId || this.communityId}` // auth method is cookie
+				: `Token ${reqConfig?.masterapikey || this.masterapikey}` // auth method is api key
 		await fetch(
 			`${this.apiurl}/informatics/notify/${strictUriEncode(guildId)}`,
 			{
@@ -68,26 +81,31 @@ export default class InfoManager extends BaseManager<Webhook> {
 				}),
 				credentials: "include",
 				headers: {
-					authorization: !reqConfig.communityId
-						? `Token ${reqConfig.masterapikey || this.masterapikey}`
-						: `Cookie ${reqConfig.communityId || this.communityId}`,
+					authorization: authentication,
 					"content-type": "application/json",
 				},
 			}
 		)
 	}
-	async notifyGuildEmbed(
-		guildId: string,
-		embed: APIEmbed,
-		reqConfig: RequestConfig = {}
-	): Promise<void> {
+	async notifyGuildEmbed({
+		guildId,
+		embed,
+		reqConfig = {},
+	}: {
+		guildId: string
+		embed: APIEmbed
+	} & DefaultProps): Promise<void> {
 		if (
-			!this.masterapikey &&
 			!reqConfig.masterapikey &&
-			!reqConfig.communityId
+			!this.masterapikey &&
+			!reqConfig.communityId &&
+			!this.communityId
 		)
 			throw new NoAuthError()
-
+		const authentication =
+			reqConfig?.communityId || this.communityId
+				? `Cookie ${reqConfig?.communityId || this.communityId}` // auth method is cookie
+				: `Token ${reqConfig?.masterapikey || this.masterapikey}` // auth method is api key
 		await fetch(
 			`${this.apiurl}/informatics/notify/${strictUriEncode(
 				guildId
@@ -97,9 +115,7 @@ export default class InfoManager extends BaseManager<Webhook> {
 				body: JSON.stringify(embed),
 				credentials: "include",
 				headers: {
-					authorization: !reqConfig.communityId
-						? `Token ${reqConfig.masterapikey || this.masterapikey}`
-						: `Cookie ${reqConfig.communityId || this.communityId}`,
+					authorization: authentication,
 					"content-type": "application/json",
 				},
 			}

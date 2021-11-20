@@ -39,6 +39,9 @@ export default class BaseManager<HoldsWithId extends Common> {
 			this.interval = setInterval(this.sweepCache.clear, 1000 * 60 * 15) // clear sweeping cache every 15 mins if its not used properly
 		}
 	}
+	getAPIKey() {
+		return this.apikey
+	}
 	protected add(
 		data: HoldsWithId,
 		cache = true,
